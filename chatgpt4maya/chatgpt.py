@@ -4,13 +4,14 @@ import os
 import re
 import sys
 import urllib.request
+from pathlib import Path
 from pprint import pprint
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [ChatGPT]: %(message)s')
+from chatgpt4maya import config
+from chatgpt4maya.config import Config
 
-sys.path.append('C:/Users/johannes/.pyenv/pyenv-win/versions/3.7.7/lib/site-packages/')
-
+logging.basicConfig(level=logging.INFO, format=config.LOG_FORMAT)
 # Load .env during development
 try:
     from dotenv import load_dotenv
@@ -19,24 +20,23 @@ try:
 except ImportError:
     pass
 
+config = Config()
+sys.path.insert(0, str(Path(config.get('OpenAI', 'OpenAILibraryPath')).resolve()))
+
 # Import openai
 try:
     import openai
 
-except ImportError:
+    logging.info('Imported openai')
+except Exception as e:
+    logging.error(e)
     logging.error('openai package could not be imported')
     openai = None
 
 
 class ChatGPT:
     def __init__(self, api_key=None):
-        # Import openai
-        try:
-            import openai
 
-        except ImportError:
-            logging.error('openai package could not be imported')
-            openai = None
         # Get api key
         api_key = api_key if api_key else os.getenv('OPENAI_API_KEY')
         if api_key:
@@ -53,10 +53,11 @@ class ChatGPT:
     def _test_response(self):
         """Send a request to httpbin"""
         url = 'https://httpbin.org/json'
+        logging.info(f'Sending request to {url}')
         res = urllib.request.urlopen(url)
-        res_body = res.read()
+        res_body = res.get()
         j = json.loads(res_body.decode("utf-8"))
-
+        
         response_content = "Here's an example code to create a row of cubes using Python in Maya:\n\n```python\nimport maya.cmds as cmds\n\n# Set the number of cubes and the distance between them\nnum_cubes = 5\ndistance = 2\n\n# Create a loop to create and position the cubes\nfor i in range(num_cubes):\n    # Create a new cube\n    cube = cmds.polyCube()[0]\n    # Position the cube based on the index and distance\n    cmds.move(i * distance, 0, 0, cube)\n```\n\nThis code will create 5 cubes and position them in a row with a distance of 2 units between each cube. You can adjust the `num_cubes` and `distance` variables to create a different number of cubes or change the distance between them."
         j = {'choices': [{'finish_reason': 'stop', 'index': 0, 'message': {
             'content': "Sure, here's an example code that creates 5 cubes and positions them in a row:\n\n```\nimport maya.cmds as cmds\n\n# Create 5 cubes\nnum_cubes = 5\ncube_size = 2\ncubes = []\nfor i in range(num_cubes):\n    cube = cmds.polyCube(w=cube_size, h=cube_size, d=cube_size)[0]\n    cubes.append(cube)\n\n# Position cubes in a row\nspacing = 1.5\nfor i, cube in enumerate(cubes):\n    cmds.move(i * (cube_size + spacing), 0, 0, cube)\n```\n\nThis code first creates 5 cubes with a size of 2 units each. Then, it positions them in a row with a spacing of 1.5 units between each cube. The `enumerate` function is used to get the index of each cube in the `cubes` list, which is then used to calculate the x position of each cube.",
@@ -105,9 +106,8 @@ class ChatGPT:
         self._append_message(message)
 
         # Get response from api
-        # TODO Mock content for testing
-        response = self._test_response()
-        # response = self._get_response()
+        # response = self._test_response() # mock api for testing
+        response = self._get_response()
 
         # Get the message content
         response_message = response['choices'][0]['message']
@@ -125,9 +125,3 @@ if __name__ == '__main__':
     api = ChatGPT()
     api._append_message('create a cube and position them in a row using python')
     pprint(api._get_response())
-
-    # data = "Here's an example code to create a row of cubes using Python in Maya:\n\n```python\nimport maya.cmds as cmds\n\n# Set the number of cubes and the distance between them\nnum_cubes = 5\ndistance = 2\n\n# Create a loop to create and position the cubes\nfor i in range(num_cubes):\n    # Create a new cube\n    cube = cmds.polyCube()[0]\n    # Position the cube based on the index and distance\n    cmds.move(i * distance, 0, 0, cube)\n```\n\nThis code will create 5 cubes and position them in a row with a distance of 2 units between each cube. You can adjust the `num_cubes` and `distance` variables to create a different number of cubes or change the distance between them."
-    # split = split_code_blocks(data)
-    # for i, n in enumerate(split):
-    #     logging.info(f'{i}:')
-    #     logging.info(n.strip())
