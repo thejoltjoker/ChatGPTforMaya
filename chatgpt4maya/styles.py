@@ -175,6 +175,7 @@ QLabel {{
 QLabel[selector='heading'] {{
     font-family: {FONT['heading'].family};
     font-weight: {FONT['heading'].weight};
+    font-size: {FONT['heading'].size};
 }}
 QLabel[selector='paragraph'] {{
     font-family: {FONT['paragraph'].family};
@@ -228,8 +229,24 @@ Button#button-save {{
     padding: {Margin.xsmall}px {Margin.medium * 3}px;
     line-height: 1;
     border-radius: {(FONT['heading'].size_int + Margin.medium * 2 + Margin.xsmall * 2) / 2}px;
-    background: {Color.mint}
+    background: {Color.mint};
 }}
+Button#button-save:hover {{
+    background: {rgb_to_hex(multiply(Color.mint, 1.1))};
+}}
+Button#button-save:hover {{
+    background: {rgb_to_hex(multiply(Color.mint, 1.1))};
+}}
+Button#button-save[selector='saved']:hover {{
+    background: {Color.mint};
+}}
+Button#button-save[selector='changed'] {{
+    background:  {Color.light_gray};
+}}
+Button#button-save[selector='changed']:hover {{
+    background:  {rgb_to_hex(multiply(Color.light_gray, 1.1))};
+}}
+
 
 Button#button-copy {{
     background: {Color.light_gray};
@@ -280,7 +297,6 @@ QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {{
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
 background: none;
 }}
-
 
 ConfigWindow {{
     background: {Color.gray};
