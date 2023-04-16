@@ -3,28 +3,18 @@
 Description of app.py.
 Inspired by https://github.com/JiachengXuGit/ChatGPTforNuke
 """
-import configparser
 import logging
-import random
-import re
-import string
 import sys
 import os
-import time
-from pathlib import Path
 from maya import cmds
 from maya import OpenMayaUI as omui
 from shiboken2 import wrapInstance
 from PySide2 import QtWidgets, QtCore, QtGui
+from chatgpt4maya import styles, chatgpt, syntax, helpers, config
+from chatgpt4maya.config import Config, MENU, BOT_USER, DATA_PATH
+from chatgpt4maya.helpers import placeholder_text, get_code_parts, random_string, split_code_blocks
 
-from chatgpt4maya import styles, chatgpt, syntax
-
-# Config
-MENU = 'ChatGPTMenu'
-BOT_USER = 'Chat GPT'
-REPO_PATH = Path(__file__).parent / '..'
-DATA_PATH = REPO_PATH / 'chatgpt4maya' / 'src'
-CONFIG_PATH = REPO_PATH / 'config.ini'
+logging.basicConfig(level=logging.INFO, format=config.LOG_FORMAT)
 
 # Load .env during development
 try:
@@ -36,53 +26,124 @@ except ImportError:
 
 
 class ConfigWindow(QtWidgets.QWidget):
+    """
+    A class representing the settings window for ChatGPT for Maya.
+    """
+
     def __init__(self, *args, **kwargs):
+        """
+        Constructor for the ConfigWindow class.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            None.
+        """
+
         super().__init__(*args, **kwargs)
-        # TODO make it programmaticly add fields
-        # Config parser
-        self.parser = configparser.ConfigParser()
+
+        # Create an instance of the Config class to access the settings data
+        self.config = Config()
+
+        # Set window properties
         self.setWindowFlags(QtCore.Qt.Window)
         self.setObjectName('ChatGPTSettingsWindow')
         self.setWindowTitle('Settings (ChatGPT for Maya)')
         self.setGeometry(200, 200, 1000, 100)
         self.setStyleSheet(styles.STYLE)
+
+        # Create layout for widgets
         self.main_layout = QtWidgets.QVBoxLayout()
         self.buttons_layout = QtWidgets.QHBoxLayout()
 
+        # Create form layout for settings
         self.form_layout = QtWidgets.QFormLayout()
         self.form_layout.setMargin(styles.Margin.medium)
         self.form_layout.setSpacing(styles.Margin.medium)
 
-        self.label_api_key = QtWidgets.QLabel('OpenAIApiKey')
-        self.field_api_key = QtWidgets.QLineEdit()
-        self.form_layout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_api_key)
-        self.form_layout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.field_api_key)
+        # Add settings fields to form layout
+        row = 0
+        for section, keys in self.config.get_all().items():
+            label_section = QtWidgets.QLabel(section)
+            label_section.setProperty('selector', 'heading')
+            self.form_layout.setWidget(row, QtWidgets.QFormLayout.LabelRole, label_section)
+            row += 1
+            for key, value in keys.items():
+                label_key = QtWidgets.QLabel(key)
+                field_value = QtWidgets.QLineEdit(value)
+                field_value.textChanged.connect(self.action_changed)
+                self.form_layout.addRow(label_key, field_value)
+                row += 1
 
-        self.label_openai_path = QtWidgets.QLabel('OpenAIPackagePath')
-        self.field_openai_path = QtWidgets.QLineEdit()
-        self.form_layout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_openai_path)
-        self.form_layout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.field_openai_path)
-
-        self.populate_fields()
+        # Create button to save changes
         self.button_save = Button('Save')
-
         self.button_save.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
-        # self.button_save.clicked.connect(self.read)
+        self.button_save.clicked.connect(self.action_save)
         self.buttons_layout.addWidget(self.button_save)
 
+        # Add form layout and buttons layout to main layout
         self.main_layout.addLayout(self.form_layout)
         self.main_layout.addLayout(self.buttons_layout)
         self.setLayout(self.main_layout)
 
-    def populate_fields(self):
-        self.field_api_key.setText(self.read('OpenAIApiKey'))
-        self.field_openai_path.setText(self.read('OpenAIPackagePath'))
+    def action_changed(self):
+        """Updates the appearance and text of the 'Save' button when an action is changed.
+        """
+        # Set the 'selector' property to 'changed' to update the appearance of the button
+        self.button_save.setProperty('selector', 'changed')
 
-    def read(self, key):
-        self.parser.read(str(CONFIG_PATH.resolve()))
-        logging.info(self.parser)
+        # Apply the custom stylesheet defined in the 'styles' module
+        self.button_save.setStyleSheet(styles.STYLE)
 
-        return self.parser['DEFAULT'].get(key)
+        # Update the text of the button to 'Save'
+        self.button_save.setText('Save')
+
+    def action_save(self):
+        """Saves the values in the form to the configuration file.
+
+        This function iterates over the items in the form, extracts the label and field
+        information, and saves each key-value pair to the configuration file using the
+        ConfigParser module. If a section label is encountered, the subsequent keys and
+        values will be saved to that section until another section label is encountered.
+
+        After saving, the appearance and text of the 'Save' button are updated to indicate
+        that the changes have been saved.
+        """
+        # Set the default section to 'DEFAULT'
+        section = 'DEFAULT'
+
+        # Iterate over the rows in the form layout
+        for i in range(self.form_layout.rowCount()):
+            # Get the label and field for the current row
+            field = self.form_layout.itemAt(i, QtWidgets.QFormLayout.FieldRole)
+            if field:
+                label = self.form_layout.itemAt(i, QtWidgets.QFormLayout.LabelRole)
+
+                # Extract the key and value from the label and field widgets
+                key = label.widget().text()
+                value = field.widget().text()
+
+                # Log a message indicating the key-value pair being saved
+                logging.info(f'Saving "{key} = {value}" to config')
+
+                # Save the key-value pair to the configuration file
+                self.config.set(section, key, value)
+            else:
+                # If a label is encountered without a corresponding field, it is assumed
+                # to be a section label, and subsequent keys and values will be saved to
+                # that section until another section label is encountered.
+                label = self.form_layout.itemAt(i, QtWidgets.QFormLayout.LabelRole)
+                widget = label.widget()
+                if isinstance(widget, QtWidgets.QLabel):
+                    section = widget.text()
+
+        # Update the appearance and text of the 'Save' button to indicate that the changes
+        # have been saved
+        self.button_save.setText('Saved')
+        self.button_save.setProperty('selector', 'saved')
+        self.button_save.setStyleSheet(styles.STYLE)
 
 
 class ChatGPTMessage(QtCore.QObject):
@@ -145,12 +206,6 @@ class ChatBubble(QtWidgets.QFrame):
         # Call the __init__ method of the parent class
         super().__init__(parent)
 
-        # size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-        # size_policy.setHorizontalStretch(0)
-        # size_policy.setVerticalStretch(0)
-        # size_policy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
-        # self.setSizePolicy(size_policy)
-
         # Determine the object name based on whether the user is a bot or a human
         if is_bot:
             object_name = 'chat-bubble-bot'
@@ -174,7 +229,7 @@ class ChatBubble(QtWidgets.QFrame):
         # Iterate through each part of the content and add it to the layout
         for part in content:
             # Check if the part contains code blocks
-            code_parts = self.get_code_parts(part)
+            code_parts = get_code_parts(part)
             if code_parts:
                 # If it does, create a code block widget
                 widget_content = self.code_block(code_parts)
@@ -200,7 +255,6 @@ class ChatBubble(QtWidgets.QFrame):
         frame = QtWidgets.QFrame()
         frame_layout = QtWidgets.QVBoxLayout()
         frame.setProperty('selector', 'code')
-        # TODO remove this
 
         # Add code
         for code in code_parts:
@@ -237,11 +291,6 @@ class ChatBubble(QtWidgets.QFrame):
         clipboard = app.clipboard()
         clipboard.setText(self.label_code.text(), QtGui.QClipboard.Clipboard)
 
-    def get_code_parts(self, part):
-        pattern = r"```(?:\w+\n)?([\s\S]+?)```"
-        code_parts = re.findall(pattern, part)
-        return code_parts
-
 
 class Spinner(QtWidgets.QFrame):
     def __init__(self, size=40, parent=None):
@@ -268,8 +317,10 @@ class Spinner(QtWidgets.QFrame):
 class ChatWindow(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(ChatWindow, self).__init__(*args, **kwargs)
+        self.config = Config()
+
         # Setup api
-        self.api = chatgpt.ChatGPT()
+        self.api = chatgpt.ChatGPT(api_key=self.config.get('OpenAI', 'OpenAIApiKey', os.getenv('OPENAI_API_KEY')))
 
         self.user = os.getlogin().title()
         self.margin = styles.Margin.large
@@ -333,7 +384,7 @@ class ChatWindow(QtWidgets.QWidget):
         # Set up a QLineEdit widget for the input field
         self.input_field = QtWidgets.QLineEdit()
         self.input_field.textChanged.connect(self.input_field_text_color_white)
-        self.input_field.setPlaceholderText(self.placeholder_text())
+        self.input_field.setPlaceholderText(placeholder_text())
         self.input_field.returnPressed.connect(self.action_send)
 
         # Create buttons and add actions
@@ -406,54 +457,12 @@ class ChatWindow(QtWidgets.QWidget):
     def input_field_text_color_gray(self):
         self.input_field.setStyleSheet(f'color: {styles.Color.light_gray};')
 
-    def placeholder_text(self):
-        placeholders = ["Create a new polygon object", "Rename a selected object",
-                        "Move an object to a specified location", "Scale an object to a specified size",
-                        "Rotate an object to a specified angle", "Set the visibility of an object",
-                        "Create a new camera", "Set the camera's position and rotation", "Create a new light",
-                        "Set the light's intensity and color", "Parent one object to another", "Create a new group",
-                        "Set the group's pivot point", "Create a new material", "Assign a material to an object",
-                        "Create a new texture", "Assign a texture to a material",
-                        "Create a new keyframe for an object's animation", "Move an object along a path",
-                        "Create a new particle system", "Set the particle system's properties",
-                        "Create a new constraint", "Set the constraint's target object", "Set the constraint's weight",
-                        "Save the current scene to a file",
-                        "Create a new polygon object and add it to the scene",
-                        "Rename a selected object and change its display name in the viewport",
-                        "Move an object to a specified location and set its pivot point",
-                        "Scale an object to a specified size and uniformly scale its UVs",
-                        "Rotate an object to a specified angle and align it to a surface",
-                        "Set the visibility of an object and keyframe its visibility over time",
-                        "Create a new camera and set its resolution gate",
-                        "Set the camera's position and rotation and keyframe its animation",
-                        "Create a new light and set its type and attributes",
-                        "Set the light's intensity and color and keyframe its animation",
-                        "Parent one object to another and set its local transformation",
-                        "Create a new group and add objects to it",
-                        "Set the group's pivot point and its transformation",
-                        "Create a new material and set its attributes",
-                        "Assign a material to an object and adjust its texture coordinates",
-                        "Create a new texture and set its properties",
-                        "Assign a texture to a material and adjust its UV mapping",
-                        "Create a new keyframe for an object's animation and set its interpolation",
-                        "Move an object along a path and adjust its tangents",
-                        "Create a new particle system and set its emitter",
-                        "Set the particle system's properties and adjust its attributes",
-                        "Create a new constraint and set its target object",
-                        "Set the constraint's weight and keyframe it over time",
-                        "Save the current scene to a file and export selected objects to a new file"]
-        placeholder_text = random.choice(placeholders)
-        return placeholder_text
-
     def setup_fonts(self):
         font_db = QtGui.QFontDatabase()
         font_path = DATA_PATH / 'font'
 
         for font in font_path.iterdir():
             font_db.addApplicationFont(str(font.resolve()))
-        # font = QtGui.QFont('Inter')
-        # font.setStyleStrategy(QtGui.QFont.PreferAntialias)
-        # self.setFont(font)
 
     def action_send(self):
         """This is what happens when you click the send button"""
@@ -508,10 +517,6 @@ class ChatWindow(QtWidgets.QWidget):
         # Add default message
         self.update_conversation_layout()
 
-    def action_copy(self):
-        app = QtWidgets.QApplication()
-        app.clipboard().setText('test')
-
     def update_conversation_layout(self):
         for msg in self.api.messages:
             if msg['role'] == 'system':
@@ -526,33 +531,21 @@ class ChatWindow(QtWidgets.QWidget):
             self.conversation_layout.addWidget(ChatBubble(user, content))
 
 
-def random_string(length=16):
-    return ''.join([random.choice(string.ascii_letters) for x in range(length)])
-
-
-def split_code_blocks(input_string):
-    """Split a string at triple ticks ``` code blocks
-
-    Returns:
-        list: list of str
-
-    """
-    # Regex to find code blocks
-    pattern = r'(```(?:\w+\n)?(?:[\s\S]+?)```)'
-    return re.split(pattern, input_string)
-
-
 def delete_menu(menu_id):
-    """Delete a menu
+    """
+    Delete a menu
 
     Args:
-        menu_id (str):
+        menu_id (str): The ID of the menu to be deleted.
     """
-    if cmds.menu(menu_id, exists=True):
-        cmds.deleteUI(menu_id)
+    if cmds.menu(menu_id, exists=True):  # Check if the menu exists
+        cmds.deleteUI(menu_id)  # Delete the menu
 
 
 def create_menu():
+    """
+    Create a menu with options for the ChatGPT plugin.
+    """
     # Delete menu if it already exists
     delete_menu(MENU)
 
@@ -561,71 +554,116 @@ def create_menu():
                      parent='MayaWindow',
                      label='ChatGPT',
                      tearOff=True)
+
+    # Add menu items
     cmds.menuItem(parent=MENU,
                   label='Open chat',
                   # i=os.path.join(ICONS_PATH, 'reload.png'),
                   enable=True,
-                  c=open_chat,
-                  optionBox=True)
+                  c=open_chat)
+    cmds.menuItem(optionBox=True, c=open_config)
     cmds.menuItem(parent=MENU,
-                  label='Quick commands',
+                  label='Quick command',
                   # i=os.path.join(ICONS_PATH, 'reload.png'),
                   enable=False)
     cmds.menuItem(parent=MENU,
                   label='Get API key...',
                   # i=os.path.join(ICONS_PATH, 'reload.png'),
-                  enable=False)
+                  enable=True,
+                  c=open_api_key_url)
+
+
+def open_api_key_url(*args):
+    """
+    Opens a web browser to the OpenAI API key management page.
+    """
+    url = 'https://platform.openai.com/account/api-keys'  # URL of the API key management page
+    logging.info(f'Opening web browser to {url}')  # Log the URL that is being opened
+    helpers.open_url(url)  # Open the URL in the user's default web browser
 
 
 def open_chat(*args):
-    mayaMainWindowPtr = omui.MQtUtil.mainWindow()
-    mayaMainWindow = wrapInstance(int(mayaMainWindowPtr), QtWidgets.QWidget)
-    ui = ChatWindow(parent=mayaMainWindow)
-    ui.show()
-    return ui
+    """
+    Opens the ChatGPT chat window.
+
+    Args:
+        *args: Unused.
+
+    Returns:
+        ui (ChatWindow): The ChatWindow instance.
+    """
+    mayaMainWindowPtr = omui.MQtUtil.mainWindow()  # Get the pointer to the Maya main window
+    mayaMainWindow = wrapInstance(int(mayaMainWindowPtr), QtWidgets.QWidget)  # Convert the pointer to a QWidget
+    ui = ChatWindow(parent=mayaMainWindow)  # Create a ChatWindow instance with the Maya window as the parent
+    ui.show()  # Show the chat window
+    return ui  # Return the ChatWindow instance
+
+
+def open_config(*args):
+    """
+    Opens the ChatGPT configuration window.
+
+    Args:
+        *args: Unused.
+
+    Returns:
+        ui (ConfigWindow): The ConfigWindow instance.
+    """
+    mayaMainWindowPtr = omui.MQtUtil.mainWindow()  # Get the pointer to the Maya main window
+    mayaMainWindow = wrapInstance(int(mayaMainWindowPtr), QtWidgets.QWidget)  # Convert the pointer to a QWidget
+    ui = ConfigWindow(parent=mayaMainWindow)  # Create a ConfigWindow instance with the Maya window as the parent
+    ui.show()  # Show the configuration window
+    return ui  # Return the ConfigWindow instance
 
 
 def open_chat_standalone(*args):
+    """
+    Opens a standalone version of the chat window as a separate application.
+
+    Returns:
+        None
+    """
+    # Create a new QApplication instance
     app = QtWidgets.QApplication(sys.argv)
+    # Set attribute to use high DPI pixmaps
     app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
+    # Create a new QMainWindow instance
     main_window = QtWidgets.QMainWindow()
+    # Create a new ChatWindow instance and set it as the central widget of the main window
     chat_window = ChatWindow(main_window)
     main_window.setCentralWidget(chat_window)
+    # Show the main window
     chat_window.show()
-    # TODO Remove this code on commit
-    # chat_window.conversation_layout.addWidget(
-    #     ChatBubble('Johannes', ['Create a cube and position them in a row using python'], is_bot=False))
-    # response = "Here's an example code to create a row of cubes using Python in Maya:\n\n```python\nimport maya.cmds as cmds\n\n# Set the number of cubes and the distance between them\nnum_cubes = 5\ndistance = 2\n\n# Create a loop to create and position the cubes\nfor i in range(num_cubes):\n    # Create a new cube\n    cube = cmds.polyCube()[0]\n    # Position the cube based on the index and distance\n    cmds.move(i * distance, 0, 0, cube)\n```\n\nThis code will create 5 cubes and position them in a row with a distance of 2 units between each cube. You can adjust the `num_cubes` and `distance` variables to create a different number of cubes or change the distance between them."
-    # split_response = chatgpt.split_code_blocks(response)
-    # chat_window.conversation_layout.addWidget(ChatBubble(BOT_USER, split_response))
-    # END
-
+    # Start the application event loop
     sys.exit(app.exec_())
 
 
-def open_settings_standalone(*args):
+def open_config_standalone(*args):
+    """
+    Opens a standalone version of the configuration window as a separate application.
+
+    Returns:
+        None
+    """
+    # Create a new QApplication instance
     app = QtWidgets.QApplication(sys.argv)
+    # Set attribute to use high DPI pixmaps
     app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
+    # Create a new QMainWindow instance
     main_window = QtWidgets.QMainWindow()
+    # Create a new ConfigWindow instance and set it as the central widget of the main window
     settings_window = ConfigWindow(main_window)
     main_window.setCentralWidget(settings_window)
+    # Show the main window
     settings_window.show()
-    # TODO Remove this code on commit
-    # chat_window.conversation_layout.addWidget(
-    #     ChatBubble('Johannes', ['Create a cube and position them in a row using python'], is_bot=False))
-    # response = "Here's an example code to create a row of cubes using Python in Maya:\n\n```python\nimport maya.cmds as cmds\n\n# Set the number of cubes and the distance between them\nnum_cubes = 5\ndistance = 2\n\n# Create a loop to create and position the cubes\nfor i in range(num_cubes):\n    # Create a new cube\n    cube = cmds.polyCube()[0]\n    # Position the cube based on the index and distance\n    cmds.move(i * distance, 0, 0, cube)\n```\n\nThis code will create 5 cubes and position them in a row with a distance of 2 units between each cube. You can adjust the `num_cubes` and `distance` variables to create a different number of cubes or change the distance between them."
-    # split_response = chatgpt.split_code_blocks(response)
-    # chat_window.conversation_layout.addWidget(ChatBubble(BOT_USER, split_response))
-    # END
-
+    # Start the application event loop
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s: %(message)s')
     logger = logging.getLogger(__name__)
-    open_settings_standalone()
+    open_config_standalone()
     # open_chat_standalone()
     # TODO Clean up
-    # TODO QThread
     # TODO Clear button
