@@ -20,7 +20,7 @@ except ImportError:
     pass
 
 MENU = 'ChatGPTMenu'
-BOT_USER = 'Chat GPT'
+BOT_USER = 'ChatGPT'
 REPO_PATH = Path(__file__).parent / '..'
 DATA_PATH = REPO_PATH / 'chatgpt4maya' / 'src'
 CONFIG_PATH = Path.home() / '.ChatGPTForMaya'
