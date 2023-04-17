@@ -33,10 +33,10 @@
 
 1. Download this repository and place it somewhere permanently*
 2. Right click on `setup_windows.bat` and choose _Run as administrator_
-3. Get an API key from [openai.com](https://platform.openai.com/account/api-keys)
-4. Open Maya and load the plugin `chatGPTForMayaPlugin.py` from the list
-5. A new Maya menu should show up called `ChatGPT`
-6. Click on the option box for _ChatGPT > Open chat_
+3. Open Maya and load the plugin `chatGPTForMayaPlugin.py` from the list
+4. A new Maya menu should show up called `ChatGPT`
+5. Click on the option box for _ChatGPT > Open chat_
+6. Get an API key from [openai.com](https://platform.openai.com/account/api-keys)
 7. Enter your API key into `OpenAiApiKey` and save settings
 
 _Notes:_
@@ -45,26 +45,31 @@ _Notes:_
 
 ### Manual installation
 
-**Setup virtual environment**
+**Setup openai with virtual environment**
 
 _Setting up a virtual environment is optional but recommended to avoid conflicts with libraries and potentially cause
 instability in Maya._
 
 1. Create a symlink for `mayapy.exe` called `python.exe` in the same folder
-    - https://help.autodesk.com/view/MAYACRE/ENU/?guid=GUID-6AF99E9C-1473-481E-A144-357577A53717
+    - `mayapy.exe` is located in `C:\Program Files\Autodesk\Maya<VERSION>\bin`
+    - Autodesk provides instructions for doing
+      this [here](https://help.autodesk.com/view/MAYACRE/ENU/?guid=GUID-6AF99E9C-1473-481E-A144-357577A53717)
 2. Create a virtual environment using `python.exe`
 3. Run `pip install openai` in your virtual environment
 4. Run `pip show openai` and copy the path from _Location:_
+
+_Notes:_
+
+- If you want to avoid making any changes to your Maya environment whatsoever you can create virtual environment using
+  pyenv and python version 3.7.7 (for Maya 2022)
 
 **Setup openai**
 
 _Skip this section if you did the steps in the virtual environment section_
 
-1. Create a symlink for `mayapy.exe` called `python.exe` in the same folder
-    - https://help.autodesk.com/view/MAYACRE/ENU/?guid=GUID-6AF99E9C-1473-481E-A144-357577A53717
-2. Create a virtual environment using `python.exe`
-3. Run `pip install openai` in your virtual environment
-4. Run `pip show openai` and copy the path from _Location:_
+3. Run `cmd` in `C:\Program Files\Autodesk\Maya<VERSION>\bin`
+4. Run `.\mayapy.exe -m pip install openai`
+4. Run `.\mayapy.exe -m pip show openai` and copy the path from _Location:_
 
 **Setup repository**
 
@@ -85,7 +90,7 @@ _Skip this section if you did the steps in the virtual environment section_
 9. Enter your API key into `OpenAiApiKey`
 10. Enter the path you got from `pip show open` into `OpenAILibraryPath`
 
-# links:
+# Links
 
 - https://github.com/openai/openai-cookbook/blob/main/techniques_to_improve_reliability.md
 
@@ -124,7 +129,7 @@ The official Autodesk website can be found at https://autodesk.com.
 The names OpenAI and ChatGPT as well as related names, marks, emblems and images are registered trademarks of their
 respective owners.
 
-# Todo:
+# Todo
 
 - Write usage instructions
 - Add clear conversation button
