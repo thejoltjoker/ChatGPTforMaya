@@ -7,10 +7,12 @@
     <br />
     <a href="https://chat.openai.com"><strong>chat.openai.com</strong></a>
     <br />
+    <br />
     <a href="https://img.shields.io/eclipse-marketplace/l/https://spdx.org/licenses/BSD-3-Clause.html">
     <img src="https://img.shields.io/static/v1?label=Licence&message=BSD-3&color=000" />
     </a>
     <img src="https://img.shields.io/static/v1?label=Stage&message=Beta&color=2BB4AB" />
+    <br />
     <br />
     <img src="https://github.com/thejoltjoker/ChatGPTforMaya/blob/master/chatgpt4maya/src/img/screenshot_01.png" alt=Screenshot">
   </p>
