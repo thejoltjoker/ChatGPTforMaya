@@ -487,6 +487,7 @@ class ChatWindow(QtWidgets.QWidget):
 
             # Clear input field
             self.input_field.clear()
+            self.input_field.setPlaceholderText('Waiting for reply')
 
             # Add response
             self.spinner = Spinner()
