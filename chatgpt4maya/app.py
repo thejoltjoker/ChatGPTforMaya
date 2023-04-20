@@ -6,7 +6,7 @@ Inspired by https://github.com/JiachengXuGit/ChatGPTforNuke
 import logging
 import sys
 import os
-from maya import cmds
+from maya import cmds, mel
 from maya import OpenMayaUI as omui
 from shiboken2 import wrapInstance
 from PySide2 import QtWidgets, QtCore, QtGui
@@ -14,7 +14,7 @@ from chatgpt4maya import styles, chatgpt, syntax, helpers, config
 from chatgpt4maya.config import Config, MENU, BOT_USER, DATA_PATH
 from chatgpt4maya.helpers import placeholder_text, get_code_parts, random_string, split_code_blocks
 
-logging.basicConfig(level=logging.INFO, format=config.LOG_FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=config.LOG_FORMAT_DEBUG)
 
 # Load .env during development
 try:
@@ -158,12 +158,20 @@ class ChatGPTMessage(QtCore.QObject):
     def request(self):
         logging.info(f'Sending message "{self.content}"')
         response = self.api.send_message(self.content)
-        # Split response at code blocks
-        response_message = response['choices'][0]['message']
-        response_content = response_message['content']
-        split_content = split_code_blocks(response_content)
-        logging.info(f'ChatGPT replied "{response_content[:48]}..."')
-        self.response.emit(split_content)
+        if response.get('error'):
+            # Split response at code blocks
+            response_message = [
+                f"Uh oh, I must've gotten a little lost in my own thoughts there... Check the log for more info.",
+                f"```{response['error']}```"]
+            logging.warning(f'ChatGPT had an error "{response["error"][:48]}..."')
+            self.response.emit([response_message])
+        else:
+            # Split response at code blocks
+            response_message = response['choices'][0]['message']
+            response_content = response_message['content']
+            split_content = split_code_blocks(response_content)
+            logging.info(f'ChatGPT replied "{response_content[:48]}..."')
+            self.response.emit(split_content)
 
 
 class Button(QtWidgets.QPushButton):
@@ -251,45 +259,62 @@ class ChatBubble(QtWidgets.QFrame):
         Returns:
 
         """
+        logging.info(code_parts)
         self.code_block_id = random_string()
+        code_block_id = random_string()
         frame = QtWidgets.QFrame()
         frame_layout = QtWidgets.QVBoxLayout()
         frame.setProperty('selector', 'code')
 
         # Add code
         for code in code_parts:
-            self.label_code = ChatBubbleCode(code.strip())
-            self.label_code.setProperty('code-block-id', self.code_block_id)
-            frame_layout.addWidget(self.label_code)
+            label_code = ChatBubbleCode(code.strip())
+            label_code.setProperty('code-block-id', code_block_id)
+            label_code.setObjectName(code_block_id)
+            frame_layout.addWidget(label_code)
         frame.setLayout(frame_layout)
 
         # Buttons
         buttons_layout = QtWidgets.QHBoxLayout()
         self.button_run = Button('Run')
-        self.button_run.setProperty('code-block-id', self.code_block_id)
-        self.button_run.clicked.connect(self.run_code)
+        self.button_run.setProperty('code-block-id', code_block_id)
+        self.button_run.clicked.connect(lambda: self.run_code(code_block_id))
 
         self.button_copy = Button('Copy')
-        self.button_copy.setProperty('code-block-id', self.code_block_id)
-        self.button_copy.clicked.connect(self.copy_code)
+        self.button_copy.setProperty('code-block-id', code_block_id)
+        self.button_copy.clicked.connect(lambda: self.copy_code(code_block_id))
 
         buttons_layout.addWidget(self.button_run)
         buttons_layout.addWidget(self.button_copy)
         frame_layout.addLayout(buttons_layout)
         return frame
 
-    def run_code(self):
-        logging.info(f'Running code block #{self.code_block_id}')
-        exec(self.label_code.text())
+    def run_code(self, code_block_id):
+        logging.info(f'Running code block #{code_block_id}')
+        code_block_label = self.findChild(QtWidgets.QLabel, code_block_id)
+        code = code_block_label.text()
+        logging.debug(code)
+        try:
+            logging.info('Running python')
+            exec(code)
+        except SyntaxError as e:
+            try:
+                logging.info('Running mel')
+                exec(f'mel.eval("{code}")')
 
-    def copy_code(self):
-        logging.info(f'Copying code block #{self.code_block_id}')
+            except Exception as e:
+                logging.error(e)
+
+    def copy_code(self, code_block_id):
+        logging.info(f'Copying code block #{code_block_id}')
+        code_block_label = self.findChild(QtWidgets.QLabel, code_block_id)
+        logging.debug(code_block_label.text())
         app = QtWidgets.QApplication.instance()
         if app is None:
             # if it does not exist then a QApplication is created
             app = QtWidgets.QApplication([])
         clipboard = app.clipboard()
-        clipboard.setText(self.label_code.text(), QtGui.QClipboard.Clipboard)
+        clipboard.setText(code_block_label.text(), QtGui.QClipboard.Clipboard)
 
 
 class Spinner(QtWidgets.QFrame):
@@ -435,7 +460,9 @@ class ChatWindow(QtWidgets.QWidget):
         header_logo.setObjectName('logotype')
 
         # Add the header logo label widget to the header layout.
+        # header_layout.addWidget(QtWidgets.QLabel())
         header_layout.addWidget(header_logo)
+        # header_layout.addWidget(QtWidgets.QLabel('+'))
 
         # Set the margin and spacing for the header layout.
         header_layout.setMargin(self.margin)
@@ -635,6 +662,12 @@ def open_chat_standalone(*args):
     main_window.setCentralWidget(chat_window)
     # Show the main window
     chat_window.show()
+
+    # TODO Remove before commit
+    chat_window.input_field.setText('Test')
+    chat_window.action_send()
+    # END
+
     # Start the application event loop
     sys.exit(app.exec_())
 
@@ -664,7 +697,8 @@ def open_config_standalone(*args):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s %(levelname)s: %(message)s')
     logger = logging.getLogger(__name__)
-    open_config_standalone()
-    # open_chat_standalone()
+    # open_config_standalone()
+    open_chat_standalone()
+
     # TODO Clean up
     # TODO Clear button

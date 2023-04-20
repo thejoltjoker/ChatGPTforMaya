@@ -24,8 +24,10 @@ BOT_USER = 'ChatGPT'
 REPO_PATH = Path(__file__).parent / '..'
 DATA_PATH = REPO_PATH / 'chatgpt4maya' / 'src'
 CONFIG_PATH = Path.home() / '.ChatGPTForMaya'
-LOG_FORMAT = '%(asctime)s %(module)s %(lineno)d [ChatGPT]: %(message)s'
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+LOG_FORMAT = '%(asctime)s [ChatGPT]: %(message)s'
+LOG_FORMAT_DEBUG = '%(asctime)s %(name)s %(levelname)s: %(message)s'
+
+logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT_DEBUG)
 
 
 def maya_script_path():
@@ -43,7 +45,7 @@ def config_path():
     output = CONFIG_PATH
     paths = maya_script_path()
     if paths:
-        user_paths = [x for x in sorted(paths, key=len) if x.startswith(str(Path().home().as_posix()))]
+        user_paths = [x for x in sorted(paths, key=len) if x.startswith(str(Path().home().as_posix())) and 'maya' in x]
         if user_paths:
             output = Path(paths[0]) / 'ChatGPTForMaya'
     return output
@@ -59,7 +61,7 @@ class Config:
         Args:
             path (pathlib.Path, optional): Path to the configuration file. Defaults to None.
         """
-        self.path = path if path else CONFIG_PATH / 'config.ini'
+        self.path = path if path else config_path() / 'config.ini'
         self.parser = configparser.ConfigParser()
         self.parser.optionxform = str
 
@@ -145,7 +147,7 @@ class Config:
 
 def setup_openai():
     # Set up a virtual environment using venv
-    env_dir = CONFIG_PATH / 'venv'
+    env_dir = config_path() / 'venv'
     env_dir.mkdir(exist_ok=True, parents=True)
     venv.create(env_dir, with_pip=True)
 

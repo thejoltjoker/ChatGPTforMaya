@@ -325,6 +325,4 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-/config.ini
-/chatgpt4maya/src/venv/
-/chatgpt4maya/src/openai.txt
+chatgpt4maya/src/openai.txt

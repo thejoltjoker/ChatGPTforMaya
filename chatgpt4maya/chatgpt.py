@@ -1,15 +1,11 @@
 import json
 import logging
 import os
-import re
 import sys
 import urllib.request
 from pathlib import Path
 from pprint import pprint
-import logging
-
 from chatgpt4maya import config
-from chatgpt4maya.config import Config
 
 logging.basicConfig(level=logging.INFO, format=config.LOG_FORMAT)
 # Load .env during development
@@ -20,8 +16,8 @@ try:
 except ImportError:
     pass
 
-config = Config()
-sys.path.insert(0, str(Path(config.get('OpenAI', 'OpenAILibraryPath')).resolve()))
+# Insert path to openai dependencies
+sys.path.insert(0, str(Path(config.Config().get('OpenAI', 'OpenAILibraryPath')).resolve()))
 
 # Import openai
 try:
@@ -35,7 +31,7 @@ except Exception as e:
 
 
 class ChatGPT:
-    def __init__(self, api_key=None):
+    def __init__(self, api_key=None, save=True):
 
         # Get api key
         api_key = api_key if api_key else os.getenv('OPENAI_API_KEY')
@@ -50,22 +46,57 @@ class ChatGPT:
                                           'Help with Autodesk Maya, python, mel, Maya expression.'}
         self.messages = [self.system_message]
 
+        # Save history
+        self.history = {}
+        self.file = Path(config.config_path() / 'history.json')
+        self.save = save
+
+    def _save_conversation(self):
+        with self.file.open('w') as write_file:
+            json.dump(self.history, write_file)
+        return self.file
+
     def _test_response(self):
         """Send a request to httpbin"""
-        url = 'https://httpbin.org/json'
-        logging.info(f'Sending request to {url}')
-        res = urllib.request.urlopen(url)
-        res_body = res.get()
-        j = json.loads(res_body.decode("utf-8"))
-        
-        response_content = "Here's an example code to create a row of cubes using Python in Maya:\n\n```python\nimport maya.cmds as cmds\n\n# Set the number of cubes and the distance between them\nnum_cubes = 5\ndistance = 2\n\n# Create a loop to create and position the cubes\nfor i in range(num_cubes):\n    # Create a new cube\n    cube = cmds.polyCube()[0]\n    # Position the cube based on the index and distance\n    cmds.move(i * distance, 0, 0, cube)\n```\n\nThis code will create 5 cubes and position them in a row with a distance of 2 units between each cube. You can adjust the `num_cubes` and `distance` variables to create a different number of cubes or change the distance between them."
-        j = {'choices': [{'finish_reason': 'stop', 'index': 0, 'message': {
-            'content': "Sure, here's an example code that creates 5 cubes and positions them in a row:\n\n```\nimport maya.cmds as cmds\n\n# Create 5 cubes\nnum_cubes = 5\ncube_size = 2\ncubes = []\nfor i in range(num_cubes):\n    cube = cmds.polyCube(w=cube_size, h=cube_size, d=cube_size)[0]\n    cubes.append(cube)\n\n# Position cubes in a row\nspacing = 1.5\nfor i, cube in enumerate(cubes):\n    cmds.move(i * (cube_size + spacing), 0, 0, cube)\n```\n\nThis code first creates 5 cubes with a size of 2 units each. Then, it positions them in a row with a spacing of 1.5 units between each cube. The `enumerate` function is used to get the index of each cube in the `cubes` list, which is then used to calculate the x position of each cube.",
-            'role': 'assistant'}}], 'created': 1681585530, 'id': 'chatcmpl-75fVCMQ3n9MCYc4W3gKVaH1nwdR5S',
-             'model': 'gpt-3.5-turbo-0301', 'object': 'chat.completion',
-             'usage': {'completion_tokens': 204, 'prompt_tokens': 40, 'total_tokens': 244}}
-        j['choices'][0]['message']['content'] = response_content
-        return j
+        # url = 'https://httpbin.org/json'
+        # logging.info(f'Sending request to {url}')
+        logging.info('Pretending to send request to openai')
+        # res = urllib.request.urlopen(url)
+        # res_body = res.get()
+        # response = json.loads(res_body.decode("utf-8"))
+
+        response = {'choices': [{'finish_reason': 'stop',
+                                 'index': 0,
+                                 'message': {'content': "Here's how to create a cube in Maya "
+                                                        'using MEL:\n'
+                                                        '\n'
+                                                        '```\n'
+                                                        'polyCube -w 1 -h 1 -d 1;\n'
+                                                        '```\n'
+                                                        '\n'
+                                                        "And here's how to create a cube in Maya "
+                                                        'using Python:\n'
+                                                        '\n'
+                                                        '```\n'
+                                                        'import maya.cmds as cmds\n'
+                                                        '\n'
+                                                        'cmds.polyCube(w=1, h=1, d=1)\n'
+                                                        '```\n'
+                                                        '\n'
+                                                        'Both of these commands will create a '
+                                                        'cube with a width, height, and depth of '
+                                                        '1 unit. You can adjust the values to '
+                                                        'create a cube of any size.',
+                                             'role': 'assistant'}}],
+                    'created': 1682008110,
+                    'id': 'chatcmpl-77RR0y31Q4Rp8I2q6xFQdyIN86hkM',
+                    'model': 'gpt-3.5-turbo-0301',
+                    'object': 'chat.completion',
+                    'usage': {'completion_tokens': 106,
+                              'prompt_tokens': 36,
+                              'total_tokens': 142}}
+
+        return response
 
     def _get_response(self):
         """
@@ -90,6 +121,7 @@ class ChatGPT:
         except Exception as e:
             # Log any exceptions that occur during the chat completion process
             logging.error(e)
+            response = {'error': e}
 
         return response
 
@@ -106,11 +138,17 @@ class ChatGPT:
         self._append_message(message)
 
         # Get response from api
-        # response = self._test_response() # mock api for testing
-        response = self._get_response()
+        response = self._test_response() # mock api for testing
+        # response = self._get_response()
+
+        # Save history
+        self.history = response
+        if self.save:
+            self._save_conversation()
 
         # Get the message content
         response_message = response['choices'][0]['message']
+        logging.debug(f'ChatGPT: {response_message}')
 
         # Append response message
         self._append_message(**response_message)
@@ -123,5 +161,5 @@ class ChatGPT:
 
 if __name__ == '__main__':
     api = ChatGPT()
-    api._append_message('create a cube and position them in a row using python')
+    api._append_message('example create cube in mel and python')
     pprint(api._get_response())
