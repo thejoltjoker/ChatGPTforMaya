@@ -183,4 +183,5 @@ def setup_openai():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s: %(message)s')
-    setup_openai()
+    # setup_openai()
+    print(config_path())

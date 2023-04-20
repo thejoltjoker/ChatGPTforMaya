@@ -14,7 +14,7 @@ from chatgpt4maya import styles, chatgpt, syntax, helpers, config
 from chatgpt4maya.config import Config, MENU, BOT_USER, DATA_PATH
 from chatgpt4maya.helpers import placeholder_text, get_code_parts, random_string, split_code_blocks
 
-logging.basicConfig(level=logging.DEBUG, format=config.LOG_FORMAT_DEBUG)
+logging.basicConfig(level=logging.INFO, format=config.LOG_FORMAT)
 
 # Load .env during development
 try:
@@ -259,7 +259,6 @@ class ChatBubble(QtWidgets.QFrame):
         Returns:
 
         """
-        logging.info(code_parts)
         self.code_block_id = random_string()
         code_block_id = random_string()
         frame = QtWidgets.QFrame()
@@ -295,11 +294,11 @@ class ChatBubble(QtWidgets.QFrame):
         code = code_block_label.text()
         logging.debug(code)
         try:
-            logging.info('Running python')
+            logging.debug('Running python')
             exec(code)
         except SyntaxError as e:
             try:
-                logging.info('Running mel')
+                logging.debug('Running mel')
                 exec(f'mel.eval("{code}")')
 
             except Exception as e:

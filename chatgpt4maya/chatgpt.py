@@ -52,11 +52,17 @@ class ChatGPT:
         self.save = save
 
     def _save_conversation(self):
+        data = []
+        if self.file.is_file():
+            with self.file.open('r') as read_file:
+                data = json.load(read_file)
+
         with self.file.open('w') as write_file:
-            json.dump(self.history, write_file)
+            data.append(self.history)
+            json.dump(data, write_file)
         return self.file
 
-    def _test_response(self):
+    def _get_mock_response(self):
         """Send a request to httpbin"""
         # url = 'https://httpbin.org/json'
         # logging.info(f'Sending request to {url}')
@@ -138,8 +144,8 @@ class ChatGPT:
         self._append_message(message)
 
         # Get response from api
-        response = self._test_response() # mock api for testing
-        # response = self._get_response()
+        # response = self._get_mock_response()  # mock api for testing
+        response = self._get_response()
 
         # Save history
         self.history = response
