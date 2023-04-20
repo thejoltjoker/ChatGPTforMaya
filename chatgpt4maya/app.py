@@ -437,6 +437,10 @@ class ChatWindow(QtWidgets.QWidget):
 
         self.input_field.setFocus()
 
+    def _print_args(self, *args, **kwargs):
+        logging.debug(args)
+        logging.debug(kwargs)
+
     def get_response(self, n):
         self.action_response_received()
 
@@ -460,9 +464,18 @@ class ChatWindow(QtWidgets.QWidget):
         header_logo.setObjectName('logotype')
 
         # Add the header logo label widget to the header layout.
-        # header_layout.addWidget(QtWidgets.QLabel())
+        self.label_new_conversation = QtWidgets.QLabel('+')
+        self.label_new_conversation.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        new_conversation_icon_path = config.DATA_PATH / 'img' / 'new_conversation.png'
+        new_conversation_pixmap = QtGui.QPixmap(str(new_conversation_icon_path.resolve()))
+        new_conversation_pixmap_scaled = new_conversation_pixmap.scaled(QtCore.QSize(32, 32), QtCore.Qt.KeepAspectRatio)
+        self.label_new_conversation.setPixmap(new_conversation_pixmap_scaled)
+
+        self.label_new_conversation.mousePressEvent = self.action_clear
+
+        header_layout.addWidget(QtWidgets.QLabel())  # filler to keep logo centered
         header_layout.addWidget(header_logo)
-        # header_layout.addWidget(QtWidgets.QLabel('+'))
+        header_layout.addWidget(self.label_new_conversation)
 
         # Set the margin and spacing for the header layout.
         header_layout.setMargin(self.margin)
@@ -532,9 +545,13 @@ class ChatWindow(QtWidgets.QWidget):
         self.input_field_text_color_gray()
         self.input_field.setPlaceholderText('Give further instructions')
 
-    def action_clear(self):
+    def action_clear(self, *args):
         """This is what happens when you click the clear button"""
         self.api.reset_conversation()
+
+        # Reset input field
+        self.input_field.clear()
+        self.input_field.setPlaceholderText(placeholder_text())
 
         # Delete messages from window
         for i in reversed(range(self.conversation_layout.count())):
