@@ -134,3 +134,18 @@ respective owners.
 - Write usage instructions
 - Add clear conversation button
 - Add quick command feature
+
+# Credits
+
+## Fonts
+
+- [Inter](https://fonts.google.com/specimen/Inter)
+- [Sofia Sans](https://fonts.google.com/specimen/Sofia+Sans)
+- [Jetbrains Mono](https://fonts.google.com/specimen/JetBrains+Mono)
+- [Montserrat](https://fonts.google.com/specimen/Montserrat)
+- [Font Awesome](https://fontawesome.com/)
+
+## Other
+
+- Original idea came from seeing Jiacheng Xu's integration
+  of [ChatGPT in Nuke](https://github.com/JiachengXuGit/ChatGPTforNuke)
