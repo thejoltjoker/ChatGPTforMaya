@@ -205,7 +205,7 @@ class ChatBubbleCode(ChatBubbleText):
 
 class ChatBubbleParagraph(ChatBubbleText):
     def __init__(self, content, *args, **kwargs):
-        super().__init__(text=content, selector='paragraph', selectable=True, *args, **kwargs)
+        super().__init__(text=f'<p style="line-height: 1.4;">{content}</p>', selector='paragraph', selectable=True, *args, **kwargs)
 
 
 class ChatBubble(QtWidgets.QFrame):

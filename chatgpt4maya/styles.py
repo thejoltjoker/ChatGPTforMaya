@@ -133,6 +133,7 @@ ChatBubble {{
     background: {Color.gray};
     border-radius: {Margin.medium};
 }}
+
 ChatBubble#chat-bubble-bot{{
   background: {Color.gray};
   margin-right: {Margin.xxlarge}px; 
