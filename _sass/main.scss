@@ -1,7 +1,7 @@
+@import "bootstrap/functions";
 @import "variables";
 @import "bootstrap/bootstrap.scss";
 @import "fontawesome/scss/fontawesome.scss";
-
 
 // font-family: 'Inter', sans-serif;
 // font-family: 'JetBrains Mono', monospace;
@@ -10,4 +10,168 @@
 
 .font-sofia{
     font-family: 'Sofia Sans', sans-serif;
+}
+
+.font-inter{
+    font-family: 'Inter', sans-serif;
+}
+
+.nav{
+    a{
+        color: $light_gray;
+        &:hover{
+            color: $almost_white;
+        }
+    }
+    
+}
+
+#intro-screenshot{
+    box-shadow: 0 0 3px 0 rgba($white, 0.15), 0 0 16px 0 rgba($code_blue, 0.1), 0 0 50px 0px rgba($light_gray, 0.1);
+    max-width: 100%;
+}
+
+#features{
+    .container{
+        .row{
+            .col{
+                background: $dark_gray;
+                @include media-breakpoint-up(lg) {
+                    background: none;
+                }
+            }
+            .assistance-icons{
+                height: 20rem;
+                .fas{
+                    position: absolute;
+                    font-size: 3rem;
+                    @include media-breakpoint-up(xl) {
+                        font-size: 4rem;
+                    }  
+                }
+                .fa-lightbulb{
+                    rotate: -6deg;
+                    left: 2rem;
+                    top: 2rem;
+                    color: $yellow;
+                    @include media-breakpoint-up(xl) {
+                        left: 2rem;
+                        top: 2rem;
+                    }                    
+                }
+                .fa-list-ol{
+                    rotate: 12deg;
+                    left: 9rem;
+                    top: 6rem;
+                    color: $pink;
+                    @include media-breakpoint-up(xl) {
+                        left: 10rem;
+                        top: 6rem;
+                    }                   
+                }
+                .fa-code{
+                    rotate: -6deg;
+                    left: 3rem;
+                    top: 13rem;
+                    color: $mint;
+                    @include media-breakpoint-up(xl) {
+                        left: 3rem;
+                        top: 13rem;
+                    }   
+                }
+                .fa-clock{
+                    rotate: -6deg;
+                    left: 17rem;
+                    top: 4rem;
+                    color: $cyan;
+                    @include media-breakpoint-up(xl) {
+                        left: 20rem;
+                        top: 5rem;
+                    }   
+                    @include media-breakpoint-up(xl) {
+                        left: 25rem;
+                        top: 5rem;
+                    }  
+                }
+                .fa-calculator{
+                    rotate: 4deg;
+                    left: 14rem;
+                    top: 15rem;
+                    color: $orange;
+                    @include media-breakpoint-up(xl) {
+                        left: 24rem;
+                        top: 15rem;
+                    }   
+                    @include media-breakpoint-up(xl) {
+                        left: 20rem;
+                        top: 15rem;
+                    }  
+                }
+                .fa-compass{
+                    rotate: 4deg;
+                    left: 24rem;
+                    top: 12rem;
+                    color: $code_green;
+                    @include media-breakpoint-up(xl) {
+                        left: 35rem;
+                        top: 12rem;
+                    }   
+                    @include media-breakpoint-up(xxl) {
+                        left: 42rem;
+                        top: 12rem;
+                    }  
+                }
+                .fa-cubes{
+                    rotate: 2deg;
+                    left: 26rem;
+                    top: 3rem;
+                    color: $code_comments;
+                    @include media-breakpoint-up(xl) {
+                        left: 30rem;
+                        top: 3rem;
+                    } 
+                    @include media-breakpoint-up(xl) {
+                        left: 35rem;
+                        top: 3rem;
+                    }   
+                }
+            }
+        }
+    }
+}
+
+.code-block{
+    background: none;
+    .kn, .o{
+        color: $code_pink;
+    }
+    .c1{
+        color: $code_comments;
+    }
+    .nf{
+        color: $code_green;
+    }
+    .p{
+        color: $code_yellow;
+    }
+    .s{
+        color: $code_blue;
+    }
+    .mi{
+        color: $code_purple;
+    }
+    figure, pre{
+        margin: 0;
+        max-width: 100%;
+    }
+}
+
+.instructions-block{
+    font-style: italic;
+    font-size: $font-size-xsm;
+}
+
+footer{
+    color: $gray;
+    border-color: $gray;
 }

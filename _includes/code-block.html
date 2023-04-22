@@ -1,0 +1,16 @@
+{% highlight python %}import maya.cmds as cmds
+
+# Create text
+text = cmds.textCurves(ch=0, f="Comic Sans", t="Hello world!")
+
+# Freeze transformations and center pivot
+cmds.makeIdentity(text, apply=True, t=1, r=1, s=1, n=0)
+cmds.xform(cp=True)
+
+# Convert to polygon
+cmds.select(text)
+cmds.polyConvertToPoly()
+
+# Extrude
+cmds.select(text + ".f[0:{}]".format(len(text)-1))
+cmds.polyExtrudeFacet(localTranslateZ=1){% endhighlight %}
