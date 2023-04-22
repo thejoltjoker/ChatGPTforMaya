@@ -22,15 +22,28 @@ title: ChatGPT for Maya
 email: hello@thejoltjoker.com
 description: >- # this means to ignore newlines until "baseurl:"
   Autodesk Maya plugin for context aware chatting with ChatGPT. Get tips, automate tasks and run code.
+tagline: Get tips, automate tasks and run code.
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: thejoltjoker
+twitter:
+  username: thejoltjoker
+  card: summary
 github_username:  thejoltjoker
+social:
+  name: Johannes
+  links:
+    - https://twitter.com/thejoltjoker
+    - https://www.linkedin.com/in/thejoltjoker
+    - https://github.com/thejoltjoker
+
+# Code syntax highlighting
+highlighter: rouge
 
 # Build settings
 plugins:
-  - jekyll-feed
-
+  - jekyll-seo-tag
+  - jekyll-minifier
+  
 # Exclude from processing.
 # The following items will not be processed, by default.
 # Any item listed under the `exclude:` key here will be automatically added to
