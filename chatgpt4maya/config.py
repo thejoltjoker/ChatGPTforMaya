@@ -38,16 +38,18 @@ def maya_script_path():
             paths = environment.split(';')
         else:
             paths = environment.split(':')
-    return paths
+    return [Path(x) for x in paths if x]
 
 
 def config_path():
     output = CONFIG_PATH
     paths = maya_script_path()
     if paths:
-        user_paths = [x for x in sorted(paths, key=len) if x.startswith(str(Path().home().as_posix())) and 'maya' in x]
-        if user_paths:
-            output = Path(paths[0]) / 'ChatGPTForMaya'
+        sorted_paths = sorted(paths, key=lambda p: len(str(p)))
+        for p in sorted_paths:
+            if str(p).startswith(str(Path.home())):
+                output = p / 'ChatGPTForMaya'
+                break
     return output
 
 
