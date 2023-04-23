@@ -129,7 +129,7 @@ QLabel#logotype{{
 }}
 
 ChatBubble {{
-    padding: {Margin.medium}px;
+    padding: {Margin.xsmall}px {Margin.medium}px;
     background: {Color.gray};
     border-radius: {Margin.medium};
 }}
