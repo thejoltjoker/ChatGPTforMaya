@@ -5,7 +5,9 @@ set /P MAYA_VERSION=What Maya version are you using? (2021, 2022, etc):
 set MAYA_BIN_PATH=C:\Program Files\Autodesk\Maya%MAYA_VERSION%\bin\
 set VENV_PATH=%~dp0chatgpt4maya\src\venv
 set MODULE_PATH=%~dp0module
-set MODULE=%MODULE_PATH%\chatGPTForMayaModule.mod
+set USER_MODULE_PATH=%USERPROFILE%\Documents\maya\%MAYA_VERSION%\modules
+set MODULE=%USER_MODULE_PATH%\chatGPTForMayaModule.mod
+
 
 echo ###############################
 echo # Creating symlink for mayapy #
@@ -41,4 +43,3 @@ echo #####################
 >>%MODULE%   echo PYTHONPATH += %~dp0
 >>%MODULE%   echo PYTHONPATH += %~dp0chatgpt4maya\src\venv\Lib\site-packages
 >>%MODULE%   echo MAYA_PLUG_IN_PATH += %~dp0plugin
-setx MAYA_MODULE_PATH %MODULE_PATH%;%MAYA_MODULE_PATH%
