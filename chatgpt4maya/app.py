@@ -609,10 +609,10 @@ def create_menu():
                   enable=True,
                   c=open_chat)
     cmds.menuItem(optionBox=True, c=open_config)
-    cmds.menuItem(parent=MENU,
-                  label='Quick command',
-                  # i=os.path.join(ICONS_PATH, 'reload.png'),
-                  enable=False)
+    # cmds.menuItem(parent=MENU,
+    #               label='Quick command',
+    #               # i=os.path.join(ICONS_PATH, 'reload.png'),
+    #               enable=False)
     cmds.menuItem(parent=MENU,
                   label='Get API key...',
                   # i=os.path.join(ICONS_PATH, 'reload.png'),
