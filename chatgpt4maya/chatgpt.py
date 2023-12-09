@@ -2,9 +2,9 @@ import json
 import logging
 import os
 import sys
-import urllib.request
 from pathlib import Path
 from pprint import pprint
+
 from chatgpt4maya import config
 
 logging.basicConfig(level=logging.INFO, format=config.LOG_FORMAT)
@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(config.Config().get('OpenAI', 'OpenAILibraryPath')).
 
 # Import openai
 try:
-    import openai
+    from openai import OpenAI
 
     logging.info('Imported openai')
 except Exception as e:
@@ -32,14 +32,17 @@ except Exception as e:
 
 class ChatGPT:
     def __init__(self, api_key=None, save=True):
+        self.client = None
 
         # Get api key
         api_key = api_key if api_key else os.getenv('OPENAI_API_KEY')
         if api_key:
             # Set api key
-            openai.api_key = api_key
+            self.client = OpenAI(api_key=api_key)
         else:
             logging.error('No api key given/found')
+            raise Exception('No api key given/found')
+
         self.model = 'gpt-3.5-turbo'
         self.system_message = {'role': 'system',
                                'content': 'Helpful assistant. '
@@ -114,13 +117,11 @@ class ChatGPT:
         response = {}
         try:
             # Create a chat completion using OpenAI's API
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=self.messages,
-                temperature=0,
-                max_tokens=2048,
-                top_p=1
-            )
+            response = self.client.chat.completions.create(model=self.model,
+                                                           messages=self.messages,
+                                                           temperature=0,
+                                                           max_tokens=2048,
+                                                           top_p=1)
             # Log the response for debugging purposes
             logging.debug(response)
 
